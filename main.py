@@ -24,31 +24,28 @@ MAX_CHARS = 140
 
 
 def validate(text: str) -> list[str]:
-    """List every gate rule the candidate line breaks (empty is clean)."""
-    issues = []
-    if not text:
-        issues.append("entry is empty")
-    if len(text) > MAX_CHARS:
-        issues.append(f"entry is {len(text)} chars, over the {MAX_CHARS} limit")
-    if text != text.strip():
-        issues.append("entry has leading or trailing whitespace")
-    if "\n" in text or "\r" in text:
-        issues.append("entry must be a single line")
-    if text and not text.strip():
-        issues.append("entry is only whitespace")
-    return issues
+    """Return the gate violations for a candidate line ([] is clean)."""
+    rules = {
+        "entry is empty": not text,
+        "entry is only whitespace": bool(text) and not text.strip(),
+        "entry has leading or trailing whitespace": text != text.strip(),
+        "entry must be a single line": "\n" in text or "\r" in text,
+        f"entry is {len(text)} chars, over the {MAX_CHARS} limit": len(text) > MAX_CHARS,
+    }
+    return [msg for msg, broken in rules.items() if broken]
 
 
-def target_dir() -> Path:
-    """Output directory: $MAKEFUN_OUTPUT_DIR when set, else /output."""
-    return Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
+def output_file() -> Path:
+    """Path of entry.txt under $MAKEFUN_OUTPUT_DIR (default /output)."""
+    base = Path(os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output")
+    return base / "entry.txt"
 
 
 def emit(text: str) -> None:
     """Create the output directory, write entry.txt, echo to stdout."""
-    folder = target_dir()
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / "entry.txt").write_text(text, encoding="utf-8")
+    path = output_file()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
     print(text)
 
 
